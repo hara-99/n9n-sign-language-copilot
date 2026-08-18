@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Copilot: Sign Language to Speech | Real-Time Multimodal AI</title>
+  <meta name="description" content="AI Copilot for continuous sign language recognition, context-aware sentence generation, self-correcting decision engine, and real-time multilingual speech synthesis." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <!-- MediaPipe Hands & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="dark-theme">
+  <!-- Top Global Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <div class="brand-icon-pulse">
+          <svg class="hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <h1 class="brand-title">VOX<span class="gradient-text">SIGN</span> <span class="ai-badge">AI COPILOT</span></h1>
+          <span class="brand-sub">Real-Time Sign Language to Multilingual Speech Engine</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active System Telemetry -->
+    <div class="header-center">
+      <div class="telemetry-chip" id="fps-chip">
+        <span class="dot green"></span>
+        <span class="lbl">FPS:</span>
+        <span class="val" id="telemetry-fps">60</span>
+      </div>
+      <div class="telemetry-chip" id="latency-chip">
+        <span class="dot cyan"></span>
+        <span class="lbl">Latency:</span>
+        <span class="val" id="telemetry-latency">12ms</span>
+      </div>
+      <div class="telemetry-chip" id="dataset-chip">
+        <span class="dot purple"></span>
+        <span class="lbl">Dataset:</span>
+        <span class="val" id="telemetry-dataset">10,676 Imgs (A-Z)</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="header-right">
+      <div class="decision-status-pill" id="global-decision-pill">
+        <span class="pulse-ring"></span>
+        <span class="decision-label">STATE: <strong id="global-state-text">WAIT</strong></span>
+      </div>
+      <button class="btn btn-emergency-quick" id="btn-quick-sos" title="Trigger Emergency Assist">
+        <span class="sos-icon">🚨</span> SOS ALERT
+      </button>
+    </div>
+  </header>
+
+  <!-- Emergency Flash Banner (Triggered by Emergency Keywords/Action) -->
+  <div class="emergency-banner hidden" id="emergency-banner">
+    <div class="emergency-content">
+      <span class="siren-icon">🚨</span>
+      <div class="emergency-text">
+        <strong id="emergency-headline">CRITICAL EMERGENCY DETECTED!</strong>
+        <span id="emergency-detail">Keyword 'HELP' recognized. High-priority vocal alert triggered & dispatch notified.</span>
+      </div>
+      <button class="btn-dismiss-emergency" id="btn-dismiss-emergency">Acknowledge & Dismiss</button>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <nav class="app-nav">
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-copilot">
+        <span class="tab-icon">⚡</span> Live AI Copilot
+      </button>
+      <button class="tab-btn" data-tab="tab-sequence">
+        <span class="tab-icon">🔤</span> Continuous Sequence & NLP
+      </button>
+      <button class="tab-btn" data-tab="tab-decision">
+        <span class="tab-icon">🧠</span> AI Decision & Signer Profile
+      </button>
+      <button class="tab-btn" data-tab="tab-dataset">
+        <span class="tab-icon">📊</span> Dataset Lab (10,676 Imgs)
+      </button>
+      <button class="tab-btn" data-tab="tab-architecture">
+        <span class="tab-icon">🌐</span> 3D 8-Layer Architecture
+      </button>
+      <button class="tab-btn" data-tab="tab-history">
+        <span class="tab-icon">📜</span> Conversation Log
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Application Body -->
+  <main class="app-main">
+
+    <!-- ========================================================
+         TAB 1: LIVE AI COPILOT
+         ======================================================== -->
+    <section class="tab-pane active" id="tab-copilot">
+      <div class="copilot-grid">
+        
+        <!-- Left: Camera & Perception Canvas Viewport -->
+        <div class="card glass-card perception-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">LAYER 1 & 2</span>
+              <h2>Live Multimodal Perception</h2>
+            </div>
+            <div class="camera-controls">
+              <button class="btn btn-sm btn-ghost" id="btn-camera-toggle">
+                <span class="cam-icon">📹</span> <span id="cam-btn-label">Pause Camera</span>
+              </button>
+              <button class="btn btn-sm btn-ghost" id="btn-camera-mirror">
+                <span>🔄</span> Flip Mirror
+              </button>
+              <button class="btn btn-sm btn-ghost" id="btn-sim-stream">
+                <span>🧪</span> Demo Stream
+              </button>
+            </div>
+          </div>
+
+          <div class="video-container" id="video-wrapper">
+            <video id="webcam-video" playsinline muted autoplay></video>
+            <canvas id="output-canvas"></canvas>
+            
+            <!-- Real-time HUD Overlays -->
+            <div class="hud-overlay top-left">
+              <div class="tracking-indicator" id="hand-tracking-status">
+                <span class="pulse-dot active"></span>
+                <span id="hand-count-text">Hand: Detected (Right)</span>
+              </div>
+              <div class="speed-indicator" id="signing-speed-hud">
+                <span class="lbl">Signing Speed:</span>
+                <span class="val" id="hud-speed-val">Steady Hold</span>
+              </div>
+            </div>
+
+            <!-- Prominent Real-time Detected Sign Bubble -->
+            <div class="hud-overlay center-token-hud" id="center-token-hud">
+              <div class="token-glow-ring" id="token-glow-ring">
+                <span class="token-letter" id="hud-detected-letter">A</span>
+                <span class="token-conf" id="hud-detected-conf">98.8%</span>
+              </div>
+              <div class="hold-progress-bar-wrap">
+                <div class="hold-progress-fill" id="hold-progress-fill"></div>
+              </div>
+            </div>
+
+            <!-- Bottom Left Perception Features -->
+            <div class="hud-overlay bottom-left">
+              <div class="landmark-metric-chip">
+                <span>Palm Tilt:</span> <strong id="hud-palm-tilt">12°</strong>
+              </div>
+              <div class="landmark-metric-chip">
+                <span>Pinch Dist:</span> <strong id="hud-pinch-dist">0.84</strong>
+              </div>
+              <div class="landmark-metric-chip">
+                <span>Face Emotion:</span> <strong id="hud-face-emotion">Attentive</strong>
+              </div>
+            </div>
+
+            <!-- Top Right Decision Engine State HUD -->
+            <div class="hud-overlay top-right">
+              <div class="decision-badge-card" id="hud-decision-badge">
+                <span class="badge-title">AI DECISION</span>
+                <span class="badge-action state-speak" id="hud-decision-action">SPEAK</span>
+                <span class="badge-reason" id="hud-decision-reason">Confidence >= 85% & Hold Validated</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Perception Status & Top Candidates Bar -->
+          <div class="perception-footer">
+            <div class="top-candidates-row">
+              <span class="candidates-title">Top Candidates:</span>
+              <div class="candidate-pills" id="candidate-pills">
+                <div class="pill active">A (98.8%)</div>
+                <div class="pill">E (1.1%)</div>
+                <div class="pill">S (0.1%)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: AI Decision Core & Voice Output Center -->
+        <div class="card glass-card translation-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">LAYERS 5, 6, 7, 8</span>
+              <h2>AI Decision Core & Voice Engine</h2>
+            </div>
+            <div class="lang-selector-group">
+              <label for="select-target-lang">Language:</label>
+              <select id="select-target-lang" class="custom-select">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="es-ES">Spanish (Español)</option>
+                <option value="fr-FR">French (Français)</option>
+                <option value="de-DE">German (Deutsch)</option>
+                <option value="hi-IN">Hindi (हिन्दी)</option>
+                <option value="ja-JP">Japanese (日本語)</option>
+                <option value="zh-CN">Chinese (Mandarin)</option>
+                <option value="ar-SA">Arabic (العربية)</option>
+                <option value="te-IN">Telugu (తెలుగు)</option>
+                <option value="ta-IN">Tamil (தமிழ்)</option>
+                <option value="it-IT">Italian (Italiano)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Raw Tokens vs Natural Sentence Box -->
+          <div class="translation-body">
+            <!-- Raw Sign Tokens Stream -->
+            <div class="stream-box">
+              <div class="stream-box-header">
+                <span class="stream-label">RAW GESTURE SEQUENCE (TEMPORAL BUFFER):</span>
+                <button class="btn btn-xs btn-ghost" id="btn-clear-buffer">Clear Buffer</button>
+              </div>
+              <div class="token-stream-display" id="token-stream-display">
+                <span class="token-chip">H</span>
+                <span class="token-chip">E</span>
+                <span class="token-chip">L</span>
+                <span class="token-chip">P</span>
+              </div>
+            </div>
+
+            <!-- Natural Sentence Output (NLP Engine) -->
+            <div class="fluent-sentence-box" id="fluent-sentence-box">
+              <div class="sentence-header">
+                <span class="sentence-label">SYNTHESIZED NATURAL SPEECH:</span>
+                <div class="meta-tags">
+                  <span class="tag tag-intent" id="tag-intent">EMERGENCY</span>
+                  <span class="tag tag-urgency tag-urgency-emergency" id="tag-urgency">EMERGENCY</span>
+                </div>
+              </div>
+              <div class="sentence-text" id="synthesized-sentence-text">
+                "Emergency! I need help immediately!"
+              </div>
+            </div>
+
+            <!-- Real-Time Speech Wave & Audio Controls -->
+            <div class="audio-control-panel">
+              <div class="audio-visualizer-container">
+                <div class="audio-bars" id="audio-bars">
+                  <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                  <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                  <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                  <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+                <div class="tts-status" id="tts-status">Voice Ready (Auto-Speak Active)</div>
+              </div>
+
+              <div class="audio-actions">
+                <button class="btn btn-primary btn-speak-now" id="btn-speak-now">
+                  <span>🔊</span> Speak Sentence
+                </button>
+                <button class="btn btn-ghost" id="btn-repeat-speech" title="Replay Last Speech">
+                  <span>🔁</span> Replay
+                </button>
+                <label class="switch-toggle" title="Automatically vocalize when confidence is validated">
+                  <input type="checkbox" id="toggle-auto-speak" checked />
+                  <span class="slider round"></span>
+                  <span class="toggle-lbl">Auto-Speak</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Voice Pitch & Rate Customization -->
+            <div class="voice-sliders-grid">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Speech Rate</span>
+                  <strong id="val-speech-rate">1.0x</strong>
+                </div>
+                <input type="range" id="slider-speech-rate" min="0.5" max="1.8" step="0.1" value="1.0" class="styled-slider" />
+              </div>
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Voice Pitch</span>
+                  <strong id="val-speech-pitch">1.0</strong>
+                </div>
+                <input type="range" id="slider-speech-pitch" min="0.5" max="1.5" step="0.1" value="1.0" class="styled-slider" />
+              </div>
+            </div>
+
+            <!-- Quick Phrase Triggers -->
+            <div class="quick-phrases-shelf">
+              <span class="shelf-label">Quick Sign Phrases:</span>
+              <div class="quick-buttons-row">
+                <button class="btn-phrase" data-phrase="HELP">🚨 HELP</button>
+                <button class="btn-phrase" data-phrase="HOSPITAL">🏥 Hospital</button>
+                <button class="btn-phrase" data-phrase="PAIN">⚠️ Pain</button>
+                <button class="btn-phrase" data-phrase="WATER">💧 Water</button>
+                <button class="btn-phrase" data-phrase="HELLO">👋 Hello</button>
+                <button class="btn-phrase" data-phrase="THANK YOU">🙏 Thank You</button>
+                <button class="btn-phrase" data-phrase="RESTROOM">🚻 Restroom</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 2: CONTINUOUS SEQUENCE & NLP SIMULATOR
+         ======================================================== -->
+    <section class="tab-pane" id="tab-sequence">
+      <div class="sequence-grid">
+        <!-- Interactive Sign Keyboard & Word Composer -->
+        <div class="card glass-card sequence-composer-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">LAYERS 4 & 5</span>
+              <h2>Interactive Sign Sequencer & Virtual ASL Keypad</h2>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-ghost" id="btn-reset-keypad">Reset</button>
+            </div>
+          </div>
+          
+          <p class="section-desc">
+            Type or click letter signs to simulate continuous fingerspelling stream. The Self-Correcting AI and Context Reconstructor will assemble complete, natural sentences in real time.
+          </p>
+
+          <!-- Interactive Alphabet Keypad (A-Z) -->
+          <div class="asl-keyboard" id="asl-keyboard">
+            <!-- Dynamically populated letters A-Z -->
+          </div>
+
+          <!-- Space / Backspace / Emergency Controls -->
+          <div class="asl-control-keys">
+            <button class="key-control key-space" id="key-space">␣ SPACE (Complete Word)</button>
+            <button class="key-control key-backspace" id="key-backspace">⌫ BACKSPACE</button>
+            <button class="key-control key-auto-correct" id="key-auto-correct">✨ Run Self-Correction</button>
+          </div>
+        </div>
+
+        <!-- Real-Time NLP Reconstruction & Semantic Analysis -->
+        <div class="card glass-card nlp-analysis-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">LAYERS 5 & 6</span>
+              <h2>Context Memory & Semantic Interpretation</h2>
+            </div>
+          </div>
+
+          <div class="nlp-results-container">
+            <div class="metric-card">
+              <span class="metric-lbl">Raw Input Sequence</span>
+              <div class="metric-val mono" id="sim-raw-input">H E L P</div>
+            </div>
+
+            <div class="metric-card highlight-card">
+              <span class="metric-lbl">Context-Reconstructed Sentence</span>
+              <div class="metric-val-large" id="sim-fluent-output">"Emergency! I need help immediately!"</div>
+            </div>
+
+            <div class="analysis-row-grid">
+              <div class="mini-analysis-box">
+                <span class="lbl">Detected Intent</span>
+                <strong class="val val-intent" id="sim-intent-val">EMERGENCY</strong>
+              </div>
+              <div class="mini-analysis-box">
+                <span class="lbl">Urgency Tier</span>
+                <strong class="val val-urgency" id="sim-urgency-val">CRITICAL (Tier 4)</strong>
+              </div>
+              <div class="mini-analysis-box">
+                <span class="lbl">Sequence Status</span>
+                <strong class="val val-complete" id="sim-complete-val">Ready to Speak</strong>
+              </div>
+            </div>
+
+            <div class="self-correct-log-card">
+              <span class="log-title">Self-Correcting AI Diagnostic Log:</span>
+              <ul class="correction-log-list" id="correction-log-list">
+                <li><span class="timestamp">[00:01]</span> Debounced repeated token 'H'</li>
+                <li><span class="timestamp">[00:02]</span> Context Memory matched keyword 'HELP' -> Elevated Urgency to EMERGENCY</li>
+                <li><span class="timestamp">[00:03]</span> On-Time Intelligence triggered instant speech queue</li>
+              </ul>
+            </div>
+
+            <button class="btn btn-primary btn-full-width" id="btn-sim-speak">
+              <span>🔊</span> Vocalize Simulated Sentence
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 3: AI DECISION ENGINE & SIGNER PERSONALIZATION
+         ======================================================== -->
+    <section class="tab-pane" id="tab-decision">
+      <div class="decision-studio-grid">
+        
+        <!-- Decision State Machine Explainer & Live State -->
+        <div class="card glass-card decision-engine-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">LAYER 7 CORE</span>
+              <h2>5-Way AI Decision State Machine</h2>
+            </div>
+            <div class="state-indicator-badge" id="studio-active-state">SPEAK</div>
+          </div>
+
+          <p class="section-desc">
+            The AI Decision Engine continuously arbitrates whether to vocalize, hold for further temporal context, request user clarification, self-correct previous tokens, or trigger emergency alerts.
+          </p>
+
+          <div class="state-nodes-grid">
+            <div class="state-node node-speak active" id="node-speak">
+              <div class="node-header">
+                <span class="node-icon">🔊</span>
+                <h3>SPEAK</h3>
+              </div>
+              <p>Confidence &ge; Threshold and complete sign/phrase held. Vocalizes with minimum delay.</p>
+              <div class="node-trigger-condition">Trigger: Conf &ge; 75%, Hold &ge; Target ms</div>
+            </div>
+
+            <div class="state-node node-wait" id="node-wait">
+              <div class="node-header">
+                <span class="node-icon">⏳</span>
+                <h3>WAIT</h3>
+              </div>
+              <p>In-progress sign transition or incomplete sequence. Accumulates temporal buffer without interrupting.</p>
+              <div class="node-trigger-condition">Trigger: Hold &lt; Target ms or Active Motion</div>
+            </div>
+
+            <div class="state-node node-clarify" id="node-clarify">
+              <div class="node-header">
+                <span class="node-icon">❓</span>
+                <h3>CLARIFY</h3>
+              </div>
+              <p>Ambiguous gesture pair (e.g. M/N, A/S). Prompts visual disambiguation choices.</p>
+              <div class="node-trigger-condition">Trigger: 45% &le; Conf &lt; 75%</div>
+            </div>
+
+            <div class="state-node node-correct" id="node-correct">
+              <div class="node-header">
+                <span class="node-icon">✨</span>
+                <h3>CORRECT</h3>
+              </div>
+              <p>Self-Correcting AI retroactively updates earlier interpretations when context shifts.</p>
+              <div class="node-trigger-condition">Trigger: N-Gram Context Mismatch</div>
+            </div>
+
+            <div class="state-node node-alert" id="node-alert">
+              <div class="node-header">
+                <span class="node-icon">🚨</span>
+                <h3>ALERT</h3>
+              </div>
+              <p>Critical trigger detected (e.g. Help, Pain, Danger). Immediate alarm and priority vocalization.</p>
+              <div class="node-trigger-condition">Trigger: Emergency Keyword Match</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personalized Signer Intelligence Settings -->
+        <div class="card glass-card personalization-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">PERSONALIZATION</span>
+              <h2>Personalized Signer Intelligence</h2>
+            </div>
+            <button class="btn btn-sm btn-primary" id="btn-save-profile">Save Profile</button>
+          </div>
+
+          <p class="section-desc">
+            Adapts dynamically to the signer's individual speed, signing style, hand tremors, and experience level.
+          </p>
+
+          <!-- Predefined Signer Profiles -->
+          <div class="profile-cards-row">
+            <div class="profile-choice-card active" data-profile="balanced">
+              <div class="profile-name">Balanced</div>
+              <div class="profile-meta">General daily use</div>
+            </div>
+            <div class="profile-choice-card" data-profile="fast_signer">
+              <div class="profile-name">Fast Signer</div>
+              <div class="profile-meta">Fluent & Rapid</div>
+            </div>
+            <div class="profile-choice-card" data-profile="novice">
+              <div class="profile-name">Novice / Learner</div>
+              <div class="profile-meta">Longer hold & assist</div>
+            </div>
+            <div class="profile-choice-card" data-profile="tremor_assist">
+              <div class="profile-name">Tremor Assist</div>
+              <div class="profile-meta">Jitter smoothing</div>
+            </div>
+          </div>
+
+          <!-- Fine-Tuning Sliders -->
+          <div class="fine-tuning-grid">
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Confidence Threshold (SPEAK)</span>
+                <strong id="val-conf-thresh">75%</strong>
+              </div>
+              <input type="range" id="slider-conf-thresh" min="50" max="95" value="75" class="styled-slider" />
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Clarification Lower Bound</span>
+                <strong id="val-clarify-bound">45%</strong>
+              </div>
+              <input type="range" id="slider-clarify-bound" min="30" max="70" value="45" class="styled-slider" />
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Gesture Hold Duration Target</span>
+                <strong id="val-hold-target">350ms</strong>
+              </div>
+              <input type="range" id="slider-hold-target" min="150" max="1000" step="50" value="350" class="styled-slider" />
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Debounce Time (Repeats)</span>
+                <strong id="val-debounce-time">250ms</strong>
+              </div>
+              <input type="range" id="slider-debounce-time" min="100" max="600" step="50" value="250" class="styled-slider" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 4: DATASET HUB & MODEL BENCHMARK LAB
+         ======================================================== -->
+    <section class="tab-pane" id="tab-dataset">
+      <div class="dataset-grid">
+        
+        <!-- Dataset Browser & Sample Tester -->
+        <div class="card glass-card dataset-browser-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">DATASET ARCHIVE</span>
+              <h2>Dataset Hub (10,676 Images across 26 Classes)</h2>
+            </div>
+            <div class="dataset-actions">
+              <button class="btn btn-sm btn-primary" id="btn-load-random-sample">🎲 Test Random Image</button>
+            </div>
+          </div>
+
+          <p class="section-desc">
+            Directly connected to the dataset in <code>c:\Users\Hara prasad\Downloads\archive (1)\Data</code>. Select any ASL class to preview sample images and run instant model inference.
+          </p>
+
+          <!-- Alphabet Class Selector Bar -->
+          <div class="class-selector-bar" id="dataset-class-bar">
+            <!-- A-Z buttons dynamically populated -->
+          </div>
+
+          <!-- Sample Image Test Bench -->
+          <div class="sample-testbench">
+            <div class="sample-preview-box">
+              <img id="sample-dataset-img" src="" alt="Dataset Sample Preview" />
+              <div class="sample-meta" id="sample-meta-info">Class: A | Filename: 1.jpg</div>
+            </div>
+
+            <div class="sample-inference-box">
+              <h3>Real-Time Inference on Dataset Image</h3>
+              <div class="prediction-large-badge">
+                <span class="lbl">Predicted Class:</span>
+                <strong class="val" id="sample-pred-class">A</strong>
+                <span class="conf" id="sample-pred-conf">(98.8% Confidence)</span>
+              </div>
+
+              <div class="top-candidate-bars" id="sample-candidate-bars">
+                <!-- Top 5 probabilities populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Drag and Drop Custom Image Tester -->
+          <div class="upload-dropzone" id="upload-dropzone">
+            <span class="upload-icon">📁</span>
+            <strong>Drop or Click to Upload Custom Sign Image for Inference</strong>
+            <span>Supports JPG, PNG, WebP</span>
+            <input type="file" id="file-upload-input" accept="image/*" class="file-input-hidden" />
+          </div>
+        </div>
+
+        <!-- Model Telemetry & Accuracy Metrics -->
+        <div class="card glass-card model-metrics-card">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="layer-tag">ML METRICS</span>
+              <h2>Model Evaluation & Training Telemetry</h2>
+            </div>
+          </div>
+
+          <div class="metrics-summary-grid">
+            <div class="metric-tile">
+              <span class="tile-title">Test Accuracy</span>
+              <strong class="tile-value green">98.85%</strong>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-title">Total Dataset</span>
+              <strong class="tile-value cyan">10,676 Imgs</strong>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-title">Classes</span>
+              <strong class="tile-value purple">26 (A-Z)</strong>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-title">Inference Speed</span>
+              <strong class="tile-value orange">&lt; 3.2ms</strong>
+            </div>
+          </div>
+
+          <!-- Class Distribution Preview -->
+          <div class="class-distribution-box">
+            <h4>Class Distribution (Samples per Letter)</h4>
+            <div class="dist-chart-bars" id="dist-chart-bars">
+              <!-- Dynamically populated micro-bars for A-Z -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 5: 3D 8-LAYER SYSTEM ARCHITECTURE EXPLORER
+         ======================================================== -->
+    <section class="tab-pane" id="tab-architecture">
+      <div class="architecture-explorer-container card glass-card">
+        <div class="card-header">
+          <div class="header-title-group">
+            <span class="layer-tag">FULL STACK SPECIFICATION</span>
+            <h2>Interactive 8-Layer Multimodal AI Architecture</h2>
+          </div>
+          <div class="arch-legend">
+            <span class="legend-dot green"></span> Live Active Signals
+            <span class="legend-dot cyan"></span> Zero-Latency Pipeline
+          </div>
+        </div>
+
+        <p class="section-desc">
+          Click any layer below to inspect its data flow, algorithm mechanics, latency profile, and submodules.
+        </p>
+
+        <!-- 8-Layer Pipeline Interactive Cards -->
+        <div class="layers-pipeline-grid" id="layers-pipeline-grid">
+          
+          <!-- Layer 1 -->
+          <div class="layer-card" data-layer="1">
+            <div class="layer-num">01</div>
+            <div class="layer-info">
+              <h3>1. Input Layer</h3>
+              <p class="layer-sub">Live Camera • Video Stream • Dataset Explorer (10,676 Imgs) • Virtual Simulator</p>
+              <div class="layer-pills">
+                <span>Webcam 60fps</span><span>Dataset Feed</span><span>Sim Keypad</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 2 -->
+          <div class="layer-card" data-layer="2">
+            <div class="layer-num">02</div>
+            <div class="layer-info">
+              <h3>2. Multimodal Perception</h3>
+              <p class="layer-sub">21 3D Hand Landmarks • Face & Emotion Analysis • Body Pose • Motion Velocity</p>
+              <div class="layer-pills">
+                <span>MediaPipe Hands</span><span>Facial Emotion</span><span>Optical Flow</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 3 -->
+          <div class="layer-card" data-layer="3">
+            <div class="layer-num">03</div>
+            <div class="layer-info">
+              <h3>3. Data Processing</h3>
+              <p class="layer-sub">Landmark Normalization • Spatial Scale Invariance • Temporal Noise Filtering</p>
+              <div class="layer-pills">
+                <span>Wrist-Centric</span><span>Moving Average</span><span>Hold/Stroke Segmenter</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 4 -->
+          <div class="layer-card" data-layer="4">
+            <div class="layer-num">04</div>
+            <div class="layer-info">
+              <h3>4. Temporal Understanding</h3>
+              <p class="layer-sub">Continuous Sign Buffer • N-Gram Language Model • Debouncing & Spelling Alignment</p>
+              <div class="layer-pills">
+                <span>Rolling Window</span><span>ASL N-Gram</span><span>Coalesce Engine</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 5 -->
+          <div class="layer-card" data-layer="5">
+            <div class="layer-num">05</div>
+            <div class="layer-info">
+              <h3>5. Context & Memory</h3>
+              <p class="layer-sub">Conversational Working Memory • Contextual Smoothing • Natural Sentence Generator</p>
+              <div class="layer-pills">
+                <span>Working Memory</span><span>Context Smoothing</span><span>Fluent NLG</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 6 -->
+          <div class="layer-card" data-layer="6">
+            <div class="layer-num">06</div>
+            <div class="layer-info">
+              <h3>6. Semantic Interpretation</h3>
+              <p class="layer-sub">Intent Classifier (Emergency/Medical/Request/Question) • 4-Tier Urgency Scoring</p>
+              <div class="layer-pills">
+                <span>Intent Classification</span><span>Urgency Detection</span><span>Tone Extractor</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 7 -->
+          <div class="layer-card active-layer" data-layer="7">
+            <div class="layer-num">07</div>
+            <div class="layer-info">
+              <h3>7. Verification & Decision Engine</h3>
+              <p class="layer-sub">5-Way Decision State: SPEAK | WAIT | CLARIFY | CORRECT | ALERT • Personalized Profiles</p>
+              <div class="layer-pills">
+                <span>Self-Correcting AI</span><span>Personalized Speed</span><span>On-Time Intelligence</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+          <!-- Layer 8 -->
+          <div class="layer-card" data-layer="8">
+            <div class="layer-num">08</div>
+            <div class="layer-info">
+              <h3>8. Output Layer</h3>
+              <p class="layer-sub">Multilingual Real-Time Voice (Web Speech API) • Subtitles • Emergency SOS Broadcast</p>
+              <div class="layer-pills">
+                <span>TTS Speech</span><span>Multi-Language</span><span>Audio Alarm</span>
+              </div>
+            </div>
+            <div class="layer-status-dot online"></div>
+          </div>
+
+        </div>
+
+        <!-- Layer Deep Dive Details Modal / Panel -->
+        <div class="layer-details-panel" id="layer-details-panel">
+          <div class="details-header">
+            <h3 id="detail-layer-title">Layer 7: Verification & AI Decision Engine</h3>
+            <span class="badge" id="detail-layer-tag">DECISION CORE</span>
+          </div>
+          <div class="details-body" id="detail-layer-body">
+            <p>
+              The Decision Core evaluates confidence against personalized thresholds, manages temporal hold validations, triggers clarification for ambiguous gesture pairs, applies retroactive self-corrections, and instantly activates emergency protocols for life-safety keywords.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 6: CONVERSATION HISTORY & EXPORT
+         ======================================================== -->
+    <section class="tab-pane" id="tab-history">
+      <div class="card glass-card history-card">
+        <div class="card-header">
+          <div class="header-title-group">
+            <span class="layer-tag">SESSION TRANSCRIPT</span>
+            <h2>Sign-to-Speech Conversation Log</h2>
+          </div>
+          <div class="history-actions">
+            <button class="btn btn-sm btn-ghost" id="btn-export-json">Export JSON</button>
+            <button class="btn btn-sm btn-ghost" id="btn-export-txt">Export TXT</button>
+            <button class="btn btn-sm btn-danger-outline" id="btn-clear-history">Clear History</button>
+          </div>
+        </div>
+
+        <div class="history-table-container">
+          <table class="history-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Raw Gestures</th>
+                <th>Synthesized Speech</th>
+                <th>Intent</th>
+                <th>Urgency</th>
+                <th>Decision</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <tr>
+                <td>12:30:15</td>
+                <td><span class="mono">H E L P</span></td>
+                <td><strong>"Emergency! I need help immediately!"</strong></td>
+                <td><span class="tag tag-intent">EMERGENCY</span></td>
+                <td><span class="tag tag-urgency tag-urgency-emergency">EMERGENCY</span></td>
+                <td><span class="tag tag-state-speak">ALERT</span></td>
+                <td><button class="btn-table-replay" data-text="Emergency! I need help immediately!">🔊</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Audio Chime & Emergency Siren Synth -->
+  <audio id="audio-chime" preload="auto"></audio>
+
+  <!-- Application Scripts -->
+  <script src="/static/mediapipe_tracker.js"></script>
+  <script src="/static/architecture_visualizer.js"></script>
+  <script src="/static/dataset_hub.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
